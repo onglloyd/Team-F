@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BSS Employee Leave Management System - Prototype</title>
+<style>
+:root{--pri:#1F4E78;--pri2:#2E75B6;--bg:#F3F6FA;--card:#fff;--txt:#1d2733;--mut:#6b7785;--bd:#dde3ea;
+--ok:#1e7e34;--okb:#e3f4e8;--warn:#9a6700;--warnb:#fff4d6;--bad:#b42318;--badb:#fde8e7;--gry:#5b6670;--gryb:#eceff2}
+*{box-sizing:border-box}body{margin:0;font-family:Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--txt);font-size:14px}
+header{background:var(--pri);color:#fff;padding:12px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header h1{font-size:18px;margin:0;flex:1}header small{opacity:.8;font-weight:400}
+header select{padding:6px 8px;border-radius:6px;border:0;font-size:13px;max-width:260px}
+nav{background:#fff;border-bottom:1px solid var(--bd);display:flex;gap:4px;padding:0 20px;flex-wrap:wrap}
+nav button{background:none;border:0;padding:12px 14px;cursor:pointer;font-size:14px;color:var(--mut);border-bottom:3px solid transparent}
+nav button.active{color:var(--pri);border-color:var(--pri);font-weight:600}
+nav .badge{background:var(--bad);color:#fff;border-radius:10px;padding:1px 7px;font-size:11px;margin-left:4px}
+main{max-width:1150px;margin:20px auto;padding:0 16px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:18px;margin-bottom:16px}
+.card h2{margin:0 0 12px;font-size:16px;color:var(--pri)}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:14px;border-left:4px solid var(--pri2)}
+.stat .n{font-size:24px;font-weight:700;color:var(--pri)}.stat .l{color:var(--mut);font-size:12px}
+.form{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+label{font-size:12px;color:var(--mut);display:block;margin-bottom:4px;font-weight:600}
+input,select,textarea{width:100%;padding:8px;border:1px solid var(--bd);border-radius:6px;font:inherit}
+textarea{resize:vertical;min-height:60px}.full{grid-column:1/-1}
+.btn{padding:8px 14px;border:0;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px}
+.btn-p{background:var(--pri);color:#fff}.btn-ok{background:var(--ok);color:#fff}.btn-bad{background:var(--bad);color:#fff}
+.btn-o{background:#fff;border:1px solid var(--bd);color:var(--txt)}.btn:hover{opacity:.9}
+table{width:100%;border-collapse:collapse}th,td{padding:9px 8px;border-bottom:1px solid var(--bd);text-align:left;vertical-align:top}
+th{background:#f7f9fb;font-size:12px;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}
+.tw{overflow-x:auto}.pill{padding:3px 9px;border-radius:12px;font-size:12px;font-weight:600;white-space:nowrap}
+.Pending{background:var(--warnb);color:var(--warn)}.Approved{background:var(--okb);color:var(--ok)}
+.Disapproved{background:var(--badb);color:var(--bad)}.Cancelled{background:var(--gryb);color:var(--gry)}
+.msg{padding:10px 12px;border-radius:6px;margin-top:10px;display:none}.msg.ok{display:block;background:var(--okb);color:var(--ok)}
+.msg.err{display:block;background:var(--badb);color:var(--bad)}
+.kv{display:grid;grid-template-columns:200px 1fr;gap:8px 12px}.kv div:nth-child(odd){color:var(--mut);font-weight:600;font-size:12px}
+.prof{display:flex;gap:16px;align-items:center;margin-bottom:14px}
+.av{width:64px;height:64px;border-radius:50%;background:var(--pri2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;flex-shrink:0}
+.mut{color:var(--mut)}.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.hidden{display:none}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}.toolbar input,.toolbar select{width:auto;min-width:180px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;padding:16px;z-index:9}
+.modal.show{display:flex}.modal .card{max-width:460px;width:100%}
+.clickable{cursor:pointer}.clickable:hover{background:#f3f7fc}
+@media(max-width:600px){.kv{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>BSS Leave Management <small>| Group Digital – Prototype</small></h1>
+  <label style="color:#fff;margin:0">Signed in as</label>
+  <select id="userSel" aria-label="Signed in user"></select>
+  <button class="btn btn-o" id="resetBtn" type="button" title="Clear all leave data">Reset data</button>
+</header>
+<nav id="nav">
+  <button data-tab="dash" class="active">Dashboard</button>
+  <button data-tab="apply">Apply Leave</button>
+  <button data-tab="my">My Leaves</button>
+  <button data-tab="approve" id="approveTab" class="hidden">Approvals <span class="badge" id="pendBadge">0</span></button>
+  <button data-tab="profile">My Information</button>
+  <button data-tab="dir">Employee Directory</button>
+</nav>
+
+<main>
+  <!-- DASHBOARD -->
+  <section id="dash">
+    <div class="card"><h2 id="welcome"></h2><div class="mut" id="welcomeSub"></div></div>
+    <div class="grid" id="balGrid"></div>
+    <div class="card" style="margin-top:16px"><h2>Recent Requests</h2><div class="tw"><table id="recentTbl"></table></div></div>
+  </section>
+
+  <!-- APPLY -->
+  <section id="apply" class="hidden">
+    <div class="card"><h2>Apply for Leave</h2>
+      <form id="applyForm" class="form" novalidate>
+        <div><label for="lvType">Leave Type</label><select id="lvType" required></select></div>
+        <div><label for="lvDur">Duration</label><select id="lvDur"><option value="1">Full Day</option><option value="0.5">Half Day (AM)</option><option value="0.5p">Half Day (PM)</option></select></div>
+        <div><label for="lvFrom">From</label><input type="date" id="lvFrom" required></div>
+        <div><label for="lvTo">To</label><input type="date" id="lvTo" required></div>
+        <div><label>Working Days Requested</label><input id="lvDays" readonly></div>
+        <div><label>Approver</label><input id="lvApprover" readonly></div>
+        <div class="full"><label for="lvReason">Reason</label><textarea id="lvReason" maxlength="300" placeholder="Brief reason for leave"></textarea></div>
+        <div class="full row"><button class="btn btn-p" type="submit">Submit Request</button><button class="btn btn-o" type="reset">Clear</button></div>
+      </form>
+      <div class="msg" id="applyMsg" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- MY LEAVES -->
+  <section id="my" class="hidden">
+    <div class="card"><h2>My Leave Requests</h2>
+      <div class="toolbar"><select id="myFilter"><option value="">All statuses</option><option>Pending</option><option>Approved</option><option>Disapproved</option><option>Cancelled</option></select></div>
+      <div class="tw"><table id="myTbl"></table></div>
+      <div class="msg" id="myMsg" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- APPROVALS -->
+  <section id="approve" class="hidden">
+    <div class="card"><h2>Pending Approvals</h2><div class="tw"><table id="pendTbl"></table></div><div class="msg" id="apprMsg" aria-live="polite"></div></div>
+    <div class="card"><h2>Team Leave History</h2><div class="tw"><table id="histTbl"></table></div></div>
+  </section>
+
+  <!-- PROFILE -->
+  <section id="profile" class="hidden"><div class="card" id="profCard"></div></section>
+
+  <!-- DIRECTORY -->
+  <section id="dir" class="hidden">
+    <div class="card"><h2>Employee Directory</h2>
+      <div class="toolbar"><input id="dirSearch" placeholder="Search name, email, position…" aria-label="Search employees"></div>
+      <div class="tw"><table id="dirTbl"></table></div>
+    </div>
+    <div class="card hidden" id="dirDetail"></div>
+  </section>
+</main>
+
+<!-- Remarks modal -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+  <div class="card"><h2 id="mTitle"></h2><div id="mBody" class="mut" style="margin-bottom:10px"></div>
+    <label for="mRemarks" id="mLbl">Remarks</label><textarea id="mRemarks" maxlength="300"></textarea>
+    <div class="msg" id="mMsg"></div>
+    <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn btn-o" id="mCancel" type="button">Close</button><button class="btn" id="mOk" type="button"></button></div>
+  </div>
+</div>
+
+<script>
+const DATA = {"emp": [{"email": "ambiledman@hoya.com", "display": "AMBIL Edman (AMBIL Edman)", "name": "Edman Ambil", "fullName": "Ambil, Edman, Pacana", "empId": "10074320", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "ambiledman", "mail": "edman.ambil@hoya.com", "team": "Non-VC", "position": "Technical consultant", "addr1": "Rizal St., Barangay San Pedro, Dumingag, Zamboanga Del Sur", "addr2": "B3 L13 Deo homes, Brangay Salvacion, Ormoc City", "mobile": "9637433053", "altMobile": "9231592138", "altEmail": "okcej24@gmail.com", "shift": "9am- 6pm", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "bartolomej@hoya.com", "display": "BARTOLOME James Paul", "name": "James Paul Bartolome", "fullName": "Bartolome, James Paul Tiglao", "empId": "10074334", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "bartolomej", "mail": "james_paul.bartolome@hoya.com", "team": "Non-VC", "position": "Functional consultant", "addr1": "Block 16 Lot 21 Phase 4 Estrella Homes, Brgy. Sta. Rosa 2, Marilao, Bulacan", "addr2": "NONE", "mobile": "9178574262", "altMobile": "8982002723", "altEmail": "jamespaulbartolome@gmail.com", "shift": "11:00pm-8:00am", "lunch": "12am-1am", "managerId": "1"}, {"email": "benedictoking@hoya.com", "display": "BENEDICTO King (BENEDICTO King)", "name": "King Benedicto", "fullName": "Benedicto, King Vergara", "empId": "10074328", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "benedictoking", "mail": "king.benedicto@hoya.com", "team": "Non-VC", "position": "SAP Functional consultant", "addr1": "Blk 4, Lot 4, Sophia Street, Baseview Homes, Subdivision, Banay Banay, Lipa City Batangas", "addr2": "", "mobile": "9175080080", "altMobile": "437832341", "altEmail": "king.benedicto@gmail.com", "shift": "8AM-5PM", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "corneliomarygrace@hoya.com", "display": "CORNELIO Mary Grace", "name": "Mary Grace CORNELIO", "fullName": "Cornelio, Mary Grace Aloner", "empId": "10074325", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "corneliomarygrace", "mail": "grace.cornelio@hoya.com", "team": "Non-VC", "position": "SAP Functional consultant", "addr1": "Mira - Monte Circle Brgy. Tinamnan Lucban,Quezon 4328 Philippines", "addr2": "1503A Victoria de Makati, Dela Rosa St. Makati City", "mobile": "639178203417", "altMobile": "639433706728", "altEmail": "mgrace.a.cornelio@gmail.com", "shift": "8AM-5PM", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "domingojulieann@hoya.com", "display": "DOMINGO Julie Ann", "name": "Julie Ann Domingo", "fullName": "Domingo, Julie Ann Babaran", "empId": "35901", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "domingojulieann", "mail": "julieann.domingo@hoya.com", "team": "Non-VC", "position": "Functional consultant - Tester", "addr1": "B61 L17 Ph3 Mt. Dulang Dulang Street, Alta Tierra Homes, Brgy. Olaes, General Mariano Alvarez, Cavite 4117", "addr2": "B19 L59 Cedar 3, PH3 Carmona Estates, Brgy. Lantic Carmona Cavite.", "mobile": "9324951502", "altMobile": "9324951502", "altEmail": "julieann.domingo@yahoo.com", "shift": "9am- 6pm", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "estrellad@hoya.com", "display": "ESTRELLA Dennis", "name": "Dennis Estrella", "fullName": "Estrella, Dennis", "empId": "10074316", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "estrellad", "mail": "dennis.estrella@hoya.com", "team": "Non-VC", "position": "Service Delivery Manager", "addr1": "Blk64 L5 Road 9 A. Reyes St. P3 New Lower Bicutan Tagig City", "addr2": "Blk 7 L4 Ph-1 Canyon Ranch Subd. Bgry Lantic Carmona Cavite", "mobile": "9177014559", "altMobile": "9686892294", "altEmail": "dEstrella0603@gmail.com", "shift": "Flexi time", "lunch": "12pm-1:00pm", "managerId": "1"}, {"email": "jannaang@hoya.com", "display": "JANNA Ang", "name": "Ang Janna", "fullName": "Ang, Janna, Salonga", "empId": "10074330", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "jannaang", "mail": "janna.ang@hoya.com", "team": "Non-VC", "position": "Functional consultant", "addr1": "#313 Purok 4 Meyto, Calumpit, Bulacan", "addr2": "", "mobile": "9089511108", "altMobile": "9608325124", "altEmail": "jannaang12@gmail.com", "shift": "8AM-5PM", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "mejiasarahmae@hoya.com", "display": "MEJIA Sarah Mae", "name": "Sarah Mae Mejia", "fullName": "Mejia, Sarah Mae Zamora", "empId": "10074331", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "mejiasarahmae", "mail": "sarahmae.mejia@hoya.com", "team": "Non-VC", "position": "Functional consultant - Tester", "addr1": "133 Kikaw Street, Libsong East, Lingayen Pangasinan", "addr2": "Purok Mahigalaon, Brgy. Lutao, Bacong, Negros Oriental", "mobile": "9674900318", "altMobile": "9993166278", "altEmail": "mejiasarahmaezamora@gmail.com", "shift": "9am- 6pm", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "rovillosr@hoya.com", "display": "ROVILLOS Ramelisa", "name": "Ramelisa Rovillos", "fullName": "Rovillos, Ramelisa, Antonio", "empId": "10074326", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "rovillosr", "mail": "ramelisa.rovillos@hoya.com", "team": "Non-VC", "position": "Senior Functional consultant", "addr1": "71 Sterling Avenue, Sterling Life Homes, Pamplona Dos Las Pinas", "addr2": "161 Brgy Ilang, San Carlos City Pangasinan", "mobile": "9173186040", "altMobile": "9177068916", "altEmail": "ramelisa.rovillos@yahoo.com", "shift": "9am- 6pm", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "serranofranklin@hoya.com", "display": "SERRANO Franklin", "name": "Franklin Serrano", "fullName": "Serrano, Franklin Ballecer", "empId": "10074341", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "serranofranklin", "mail": "franklin_serrano@hoya.com", "team": "Non-VC", "position": "Technical consultant", "addr1": "Block 12 Lot 28, Pinagsama AFP-PNP Village Phase 2, Taguig City, Philippines", "addr2": "Block 2 Lot 22, Pinagsama, Phase 2, Taguig City, Philippines", "mobile": "9453005636", "altMobile": "9927199736", "altEmail": "franklinserrano16.fs@gmail.com", "shift": "10AM-7PM", "lunch": "12PM-1PM", "managerId": "1"}, {"email": "verdidareymond@hoya.com", "display": "VERDIDA Reymond", "name": "Reymond VERDIDA", "fullName": "Verdida, Reymond Jumao-as", "empId": "10074324", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "verdidareymond", "mail": "reymond.verdida@hoya.com", "team": "NON-VC", "position": "CIT - Security Specialist - DLP", "addr1": "Blk 16 Hicban Compound, Soldiers Hills IV Phase 2, Brgy Molino VIm Bacoor, Cavite", "addr2": "Maihao, Cawayan Masbate", "mobile": "9190885492", "altMobile": "9369748192", "altEmail": "reymondverdida@ymail.com", "shift": "8AM-5PM", "lunch": "12pm-1pm", "managerId": "1"}, {"email": "vismanosa@hoya.com", "display": "VISMANOS Arcely", "name": "Arcely Vismanos", "fullName": "Vismanos, Arcely, Solomon", "empId": "10074329", "company": "HOYA LENS PHILIPPINES, INC.", "dept": "Group Digital", "office": "HOYA LENS PHILIPPINES, INC.", "sam": "vismanosa", "mail": "arcely.vismanos@hoya.com", "team": "Non-VC", "position": "Lead functional consultant", "addr1": "Block 29 Lot 22 Bistekville 2, Kaligayahan, Novaliches, Quezon City", "addr2": "Phase 1 Block 11 Lot 41 PAGIBIG Citihomes Subdivision, Malanang, Opol Misamis Oriental", "mobile": "9982204992", "altMobile": "9760453146", "altEmail": "arciebeth@gmail.com", "shift": "10AM-7PM", "lunch": "12AM-1PM", "managerId": "1"}], "mgr": [{"id": "1", "email": "estrellad@hoya.com", "display": "ESTRELLA Dennis"}]};
+const LEAVE_TYPES = {"Vacation Leave":15,"Sick Leave":15,"Emergency Leave":3,"Birthday Leave":1,"Bereavement Leave":3};
+const KEY = "bss_leave_requests_v1";
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const emps = DATA.emp, mgrs = DATA.mgr;
+const byEmail = e => emps.find(x => x.email.toLowerCase() === String(e).toLowerCase());
+const mgrOf = emp => mgrs.find(m => m.id === emp.managerId);
+const isMgr = emp => mgrs.some(m => m.email.toLowerCase() === emp.email.toLowerCase());
+const mgrIdOf = emp => (mgrs.find(m => m.email.toLowerCase() === emp.email.toLowerCase()) || {}).id;
+const fmt = d => d ? new Date(d + "T00:00:00").toLocaleDateString("en-PH",{year:"numeric",month:"short",day:"numeric"}) : "";
+const today = () => new Date().toISOString().slice(0,10);
+const initials = n => n.split(/\s+/).filter(Boolean).slice(0,2).map(w => w[0].toUpperCase()).join("");
+
+let requests = load(), me = null;
+function load(){ try { return JSON.parse(localStorage.getItem(KEY)) || seed(); } catch(e){ return seed(); } }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(requests)); } catch(e){} }
+function seed(){
+  const d = n => { const t = new Date(); t.setDate(t.getDate()+n); return t.toISOString().slice(0,10); };
+  return [
+    {id:1001,email:"bartolomej@hoya.com",type:"Vacation Leave",from:d(7),to:d(9),days:3,dur:"Full Day",reason:"Family trip",status:"Pending",filed:d(-1),remarks:""},
+    {id:1002,email:"vismanosa@hoya.com",type:"Sick Leave",from:d(-5),to:d(-5),days:1,dur:"Full Day",reason:"Flu",status:"Approved",filed:d(-6),remarks:"Get well soon"},
+    {id:1003,email:"verdidareymond@hoya.com",type:"Vacation Leave",from:d(14),to:d(15),days:2,dur:"Full Day",reason:"Personal errands",status:"Pending",filed:d(0),remarks:""},
+    {id:1004,email:"jannaang@hoya.com",type:"Emergency Leave",from:d(-10),to:d(-10),days:1,dur:"Full Day",reason:"Family emergency",status:"Disapproved",filed:d(-11),remarks:"Please coordinate coverage first"}
+  ];
+}
+
+function workDays(f, t){
+  if(!f || !t) return 0; let a = new Date(f+"T00:00:00"), b = new Date(t+"T00:00:00"); if(b < a) return 0;
+  let n = 0; for(let x = new Date(a); x <= b; x.setDate(x.getDate()+1)){ const w = x.getDay(); if(w !== 0 && w !== 6) n++; } return n;
+}
+function used(email, type){ return requests.filter(r => r.email === email && r.type === type && (r.status === "Approved" || r.status === "Pending")).reduce((s,r) => s + r.days, 0); }
+function bal(email, type){ return LEAVE_TYPES[type] - used(email, type); }
+function flash(id, text, ok=true){ const m = $(id); m.className = "msg " + (ok ? "ok" : "err"); m.textContent = text; clearTimeout(m._t); m._t = setTimeout(() => m.className = "msg", 4000); }
+const pill = s => `<span class="pill ${s}">${s}</span>`;
+const nameOf = e => (byEmail(e) || {}).name || e;
+
+/* ---------- init ---------- */
+const sel = $("userSel");
+[...emps].sort((a,b) => a.display.localeCompare(b.display)).forEach(e => {
+  const o = document.createElement("option"); o.value = e.email; o.textContent = e.display.replace(/\s*\(.*\)$/,"") + (isMgr(e) ? "  (Manager)" : ""); sel.appendChild(o);
+});
+Object.keys(LEAVE_TYPES).forEach(t => $("lvType").insertAdjacentHTML("beforeend", `<option>${t}</option>`));
+sel.addEventListener("change", () => { me = byEmail(sel.value); renderAll(); });
+$("nav").addEventListener("click", e => { const b = e.target.closest("button[data-tab]"); if(b) show(b.dataset.tab); });
+$("resetBtn").addEventListener("click", () => { if(confirm("Reset all leave requests to sample data?")){ localStorage.removeItem(KEY); requests = seed(); save(); renderAll(); } });
+
+function show(tab){
+  document.querySelectorAll("#nav button").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  document.querySelectorAll("main > section").forEach(s => s.classList.toggle("hidden", s.id !== tab));
+}
+
+function renderAll(){
+  const mgr = isMgr(me);
+  $("approveTab").classList.toggle("hidden", !mgr);
+  if(!mgr && !$("approve").classList.contains("hidden")) show("dash");
+  renderDash(); renderApplyMeta(); renderMy(); renderProfile(); renderDir(); if(mgr) renderApprovals();
+  const n = mgr ? teamReqs().filter(r => r.status === "Pending").length : 0; $("pendBadge").textContent = n;
+}
+
+/* ---------- dashboard ---------- */
+function renderDash(){
+  $("welcome").textContent = `Welcome, ${me.name}`;
+  const m = mgrOf(me);
+  $("welcomeSub").textContent = `${me.position} · ${me.dept} · Reports to: ${m ? m.display : "—"}`;
+  $("balGrid").innerHTML = Object.keys(LEAVE_TYPES).map(t => `<div class="stat"><div class="n">${bal(me.email,t)}<span class="mut" style="font-size:13px"> / ${LEAVE_TYPES[t]}</span></div><div class="l">${t} remaining</div></div>`).join("");
+  const mine = requests.filter(r => r.email === me.email).sort((a,b) => b.id - a.id).slice(0,5);
+  $("recentTbl").innerHTML = mine.length ? `<tr><th>Type</th><th>Dates</th><th>Days</th><th>Status</th></tr>` + mine.map(r => `<tr><td>${esc(r.type)}</td><td>${fmt(r.from)} – ${fmt(r.to)}</td><td>${r.days}</td><td>${pill(r.status)}</td></tr>`).join("") : `<tr><td class="mut">No leave requests yet.</td></tr>`;
+}
+
+/* ---------- apply ---------- */
+function renderApplyMeta(){
+  const m = mgrOf(me);
+  $("lvApprover").value = (m && m.email.toLowerCase() !== me.email.toLowerCase()) ? m.display : "Group Digital Head (escalation)";
+  $("lvFrom").min = today(); $("lvTo").min = $("lvFrom").value || today(); calcDays();
+}
+function calcDays(){
+  const f = $("lvFrom").value, t = $("lvTo").value, half = $("lvDur").value !== "1";
+  if(half && f){ $("lvTo").value = f; }
+  const d = half ? (workDays(f, f) ? 0.5 : 0) : workDays(f, $("lvTo").value);
+  $("lvDays").value = d ? d + (d === 1 ? " day" : " days") : "";
+  return d;
+}
+["lvFrom","lvTo","lvDur"].forEach(id => $(id).addEventListener("change", () => { $("lvTo").min = $("lvFrom").value || today(); calcDays(); }));
+$("applyForm").addEventListener("reset", () => setTimeout(() => { renderApplyMeta(); }, 0));
+$("applyForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const type = $("lvType").value, f = $("lvFrom").value, t = $("lvTo").value, days = calcDays(), reason = $("lvReason").value.trim();
+  if(!f || !t) return flash("applyMsg", "Please select From and To dates.", false);
+  if(f < today()) return flash("applyMsg", "Start date cannot be in the past.", false);
+  if(t < f) return flash("applyMsg", "End date must be on or after the start date.", false);
+  if(!days) return flash("applyMsg", "Selected dates fall on weekends only. Choose working days.", false);
+  if(!reason) return flash("applyMsg", "Please enter a reason.", false);
+  if(days > bal(me.email, type)) return flash("applyMsg", `Insufficient ${type} balance. Available: ${bal(me.email,type)} day(s).`, false);
+  const overlap = requests.some(r => r.email === me.email && ["Pending","Approved"].includes(r.status) && !(t < r.from || f > r.to));
+  if(overlap) return flash("applyMsg", "You already have a pending/approved leave overlapping these dates.", false);
+  const durTxt = $("lvDur").selectedOptions[0].text;
+  const id = Math.max(1000, ...requests.map(r => r.id)) + 1;
+  requests.push({id, email: me.email, type, from: f, to: t, days, dur: durTxt, reason, status: "Pending", filed: today(), remarks: ""});
+  save(); $("applyForm").reset(); renderAll();
+  flash("applyMsg", `Leave request #${id} submitted and sent to ${$("lvApprover").value} for approval.`);
+});
+
+/* ---------- my leaves / cancel ---------- */
+function renderMy(){
+  const flt = $("myFilter").value;
+  const rows = requests.filter(r => r.email === me.email && (!flt || r.status === flt)).sort((a,b) => b.id - a.id);
+  $("myTbl").innerHTML = rows.length ? `<tr><th>#</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Status</th><th>Manager Remarks</th><th>Action</th></tr>` +
+    rows.map(r => {
+      const canCancel = r.status === "Pending" || (r.status === "Approved" && r.from > today());
+      return `<tr><td>${r.id}</td><td>${esc(r.type)}<div class="mut" style="font-size:12px">${esc(r.dur)}</div></td><td>${fmt(r.from)} – ${fmt(r.to)}</td><td>${r.days}</td><td>${esc(r.reason)}</td><td>${pill(r.status)}</td><td>${esc(r.remarks) || '<span class="mut">—</span>'}</td>
+      <td>${canCancel ? `<button class="btn btn-o" type="button" data-cancel="${r.id}">Cancel</button>` : '<span class="mut">—</span>'}</td></tr>`;
+    }).join("") : `<tr><td class="mut">No requests found.</td></tr>`;
+}
+$("myFilter").addEventListener("change", renderMy);
+$("myTbl").addEventListener("click", e => { const b = e.target.closest("[data-cancel]"); if(b) openModal("cancel", +b.dataset.cancel); });
+
+/* ---------- approvals ---------- */
+function teamReqs(){ const id = mgrIdOf(me); return requests.filter(r => { const e = byEmail(r.email); return e && e.managerId === id && e.email !== me.email; }); }
+function renderApprovals(){
+  const team = teamReqs(), pend = team.filter(r => r.status === "Pending").sort((a,b) => a.from.localeCompare(b.from));
+  $("pendTbl").innerHTML = pend.length ? `<tr><th>#</th><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Reason</th><th>Balance</th><th>Action</th></tr>` +
+    pend.map(r => `<tr><td>${r.id}</td><td>${esc(nameOf(r.email))}<div class="mut" style="font-size:12px">${esc((byEmail(r.email)||{}).position)}</div></td><td>${esc(r.type)}</td><td>${fmt(r.from)} – ${fmt(r.to)}</td><td>${r.days}</td><td>${esc(r.reason)}</td><td>${bal(r.email,r.type) + r.days} avail.</td>
+    <td class="row"><button class="btn btn-ok" type="button" data-appr="${r.id}">Approve</button><button class="btn btn-bad" type="button" data-rej="${r.id}">Disapprove</button></td></tr>`).join("")
+    : `<tr><td class="mut">No pending requests. 🎉</td></tr>`;
+  const hist = team.filter(r => r.status !== "Pending").sort((a,b) => b.id - a.id);
+  $("histTbl").innerHTML = hist.length ? `<tr><th>#</th><th>Employee</th><th>Type</th><th>Dates</th><th>Days</th><th>Status</th><th>Remarks</th></tr>` +
+    hist.map(r => `<tr><td>${r.id}</td><td>${esc(nameOf(r.email))}</td><td>${esc(r.type)}</td><td>${fmt(r.from)} – ${fmt(r.to)}</td><td>${r.days}</td><td>${pill(r.status)}</td><td>${esc(r.remarks) || "—"}</td></tr>`).join("")
+    : `<tr><td class="mut">No history yet.</td></tr>`;
+}
+$("pendTbl").addEventListener("click", e => {
+  const a = e.target.closest("[data-appr]"), r = e.target.closest("[data-rej]");
+  if(a) openModal("approve", +a.dataset.appr); if(r) openModal("reject", +r.dataset.rej);
+});
+
+/* ---------- modal ---------- */
+let mState = null;
+function openModal(kind, id){
+  const r = requests.find(x => x.id === id); if(!r) return; mState = {kind, r};
+  const cfg = {cancel:["Cancel Leave Request","Confirm Cancel","btn-bad","Reason for cancellation (optional)"],
+               approve:["Approve Leave","Approve","btn-ok","Remarks (optional)"],
+               reject:["Disapprove Leave","Disapprove","btn-bad","Reason for disapproval (required)"]}[kind];
+  $("mTitle").textContent = cfg[0]; $("mOk").textContent = cfg[1]; $("mOk").className = "btn " + cfg[2]; $("mLbl").textContent = cfg[3];
+  $("mBody").textContent = `#${r.id} · ${nameOf(r.email)} · ${r.type} · ${fmt(r.from)} – ${fmt(r.to)} (${r.days} day/s)`;
+  $("mRemarks").value = ""; $("mMsg").className = "msg"; $("modal").classList.add("show"); $("mRemarks").focus();
+}
+function closeModal(){ $("modal").classList.remove("show"); mState = null; }
+$("mCancel").addEventListener("click", closeModal);
+$("modal").addEventListener("click", e => { if(e.target.id === "modal") closeModal(); });
+document.addEventListener("keydown", e => { if(e.key === "Escape") closeModal(); });
+$("mOk").addEventListener("click", () => {
+  if(!mState) return; const {kind, r} = mState, txt = $("mRemarks").value.trim();
+  if(kind === "reject" && !txt){ $("mMsg").className = "msg err"; $("mMsg").textContent = "Please provide a reason for disapproval."; return; }
+  if(kind === "cancel"){ r.status = "Cancelled"; r.remarks = txt ? "Cancelled by employee: " + txt : "Cancelled by employee"; }
+  if(kind === "approve"){ r.status = "Approved"; r.remarks = txt; r.actionBy = me.email; }
+  if(kind === "reject"){ r.status = "Disapproved"; r.remarks = txt; r.actionBy = me.email; }
+  save(); closeModal(); renderAll();
+  flash(kind === "cancel" ? "myMsg" : "apprMsg", `Request #${r.id} ${r.status.toLowerCase()}.`);
+});
+
+/* ---------- profile / directory ---------- */
+function profileHTML(e, full){
+  const m = mgrOf(e);
+  const rows = [["Employee ID",e.empId],["Full Name",e.fullName],["Display Name",e.display],["Position",e.position],["Department",e.dept],["Company",e.company],
+    ["Office Location",e.office],["Team",e.team],["Manager",m ? m.display : "—"],["Work Email (UPN)",e.email],["Mail",e.mail],["SAM Account",e.sam],
+    ["Shift",e.shift],["Lunch Break",e.lunch]];
+  if(full) rows.push(["Mobile Number",e.mobile],["Alternate Contact",e.altMobile],["Alternate Email",e.altEmail],["Primary Address",e.addr1],["Alternate Address",e.addr2]);
+  return `<div class="prof"><div class="av">${esc(initials(e.name))}</div><div><h2 style="margin:0">${esc(e.name)}</h2><div class="mut">${esc(e.position)} · ${esc(e.dept)}</div></div></div>
+  <div class="kv">${rows.map(([k,v]) => `<div>${k}</div><div>${esc(v) || '<span class="mut">—</span>'}</div>`).join("")}</div>`;
+}
+function renderProfile(){ $("profCard").innerHTML = profileHTML(me, true); }
+function renderDir(){
+  const q = $("dirSearch").value.trim().toLowerCase();
+  const list = emps.filter(e => !q || [e.name,e.email,e.position,e.fullName,e.empId].join(" ").toLowerCase().includes(q)).sort((a,b) => a.name.localeCompare(b.name));
+  $("dirTbl").innerHTML = list.length ? `<tr><th>Name</th><th>Employee ID</th><th>Position</th><th>Email</th><th>Shift</th><th>Manager</th></tr>` +
+    list.map(e => `<tr class="clickable" tabindex="0" data-em="${esc(e.email)}"><td>${esc(e.name)}</td><td>${esc(e.empId)}</td><td>${esc(e.position)}</td><td>${esc(e.email)}</td><td>${esc(e.shift)}</td><td>${esc((mgrOf(e)||{}).display || "—")}</td></tr>`).join("")
+    : `<tr><td class="mut">No matching employees.</td></tr>`;
+  $("dirDetail").classList.add("hidden");
+}
+$("dirSearch").addEventListener("input", renderDir);
+function openDir(em){ const e = byEmail(em); if(!e) return; const d = $("dirDetail");
+  // Personal contact details visible only to the employee's manager
+  const full = isMgr(me) && e.managerId === mgrIdOf(me);
+  d.innerHTML = profileHTML(e, full) + (full ? "" : `<p class="mut" style="margin-top:12px">Personal contact and address details are visible only to the employee and their manager.</p>`);
+  d.classList.remove("hidden"); d.scrollIntoView({behavior:"smooth"}); }
+$("dirTbl").addEventListener("click", e => { const r = e.target.closest("[data-em]"); if(r) openDir(r.dataset.em); });
+$("dirTbl").addEventListener("keydown", e => { const r = e.target.closest("[data-em]"); if(r && e.key === "Enter") openDir(r.dataset.em); });
+
+/* ---------- start ---------- */
+sel.value = "estrellad@hoya.com"; me = byEmail(sel.value) || emps[0]; sel.value = me.email;
+save(); renderAll();
+</script>
+</body>
+</html>
